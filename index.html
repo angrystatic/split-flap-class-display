@@ -22,16 +22,30 @@
 <body class="min-h-screen p-4 md:p-8">
 
     <div class="max-w-5xl mx-auto">
-        <!-- Header -->
         <div class="mb-8 border-b border-slate-700 pb-6">
             <h1 class="text-3xl font-bold tracking-tight text-white mb-2">Split-Flap Board Generator</h1>
-            <p class="text-slate-400">Configure your flight or class schedule below. Enforced character limits ensure the mechanical board layout remains perfectly aligned. Generate and download your self-contained display file when ready.</p>
+            <p class="text-slate-400">Configure your flight or class schedule below. Generate and download your self-contained display file when ready.</p>
         </div>
 
-        <!-- Main Editor Area -->
         <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-xl p-6 mb-8">
             
-            <!-- Headers for the rows -->
+            <div class="mb-8 p-4 bg-slate-900/50 border border-slate-700 rounded-lg flex flex-col md:flex-row gap-6">
+                <div class="flex-1">
+                    <label for="board-title" class="block text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Board Title</label>
+                    <input type="text" id="board-title" value="RCAF BARKER COLLEGE" class="w-full bg-slate-900 border border-slate-600 rounded px-4 py-2 text-xl text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold uppercase" placeholder="e.g. DEPARTURE BOARD">
+                    <p class="text-xs text-slate-500 mt-2">This title will appear at the top of your generated display board.</p>
+                </div>
+                
+                <div class="flex-none flex flex-col justify-start">
+                    <label class="block text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Audio</label>
+                    <label class="relative inline-flex items-center cursor-pointer mt-2">
+                        <input type="checkbox" id="enable-sound" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        <span class="ml-3 text-sm font-medium text-slate-300">Enable Sound Effects</span>
+                    </label>
+                </div>
+            </div>
+
             <div class="hidden md:grid md:grid-cols-12 gap-4 mb-4 text-sm font-semibold text-slate-400 px-2 uppercase tracking-wider">
                 <div class="col-span-2">Course (Max 8)</div>
                 <div class="col-span-4">Instructor (Max 14)</div>
@@ -40,12 +54,10 @@
                 <div class="col-span-1 text-center">Action</div>
             </div>
 
-            <!-- Container for dynamic rows -->
             <div id="schedule-rows-container" class="space-y-4">
                 <!-- Rows will be injected here via JS -->
             </div>
 
-            <!-- Action Buttons -->
             <div class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-slate-700 pt-6">
                 <button id="add-btn" class="w-full sm:w-auto px-6 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -117,18 +129,16 @@
         document.getElementById('add-btn').addEventListener('click', () => {
             scheduleData.push({ course: "", instructor: "", room: "", remarks: "" });
             renderRows();
-            // Scroll to bottom
             setTimeout(() => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }, 50);
         });
 
-        function getTemplate(jsonString) {
-            // Using concatenation for closing script tags to avoid breaking the generator's own script block
+        function getTemplate(boardTitle, enableSound, jsonString) {
             return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generated Split-Flap Board</title>
+    <title>${boardTitle} - Schedule</title>
     <style>
         :root {
             --bg-color: #1a1a1d;
@@ -162,7 +172,11 @@
             align-items: center;
             z-index: 1000;
             flex-direction: column;
+            text-align: center;
         }
+
+        #start-overlay h2 { margin-bottom: 10px; font-size: 2rem; letter-spacing: 2px; }
+        #start-overlay p { margin-bottom: 30px; color: #aaa; }
 
         #start-overlay button {
             font-size: 1.5rem;
@@ -190,6 +204,7 @@
             font-size: 1.5rem;
             letter-spacing: 4px;
             font-weight: bold;
+            text-transform: uppercase;
         }
 
         .board-header-clock { display: flex; gap: 4px; }
@@ -237,14 +252,14 @@
 </head>
 <body>
     <div id="start-overlay">
-        <h2>FLIGHT INFORMATION DISPLAY SYSTEM</h2>
-        <p>Click to start automated sequence</p>
+        <h2>${boardTitle}</h2>
+        <p>Click to start automated mechanical sequence</p>
         <button onclick="startSystem()">INITIALIZE BOARD</button>
     </div>
 
     <div class="board-container" id="main-board">
         <div class="board-header">
-            <div>DEPARTURE SCHEDULE</div>
+            <div>${boardTitle}</div>
             <div class="board-header-clock" id="clock"></div>
         </div>
         <div class="schedule-labels">
@@ -258,6 +273,7 @@
 
     <script>
         const schedules = ${jsonString};
+        const enableSound = ${enableSound};
 
         const COL_LENGTHS = { course: 8, instructor: 14, room: 6, remarks: 11 };
         const ALPHANUMERIC = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"; 
@@ -268,14 +284,17 @@
             document.getElementById('start-overlay').style.display = 'none';
             document.getElementById('main-board').style.display = 'block';
             
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            audioCtx = new AudioContext();
-            startMechanicalSoundLoop();
+            if (enableSound) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                startMechanicalSoundLoop();
+            }
+            
             renderBoard(); animateFlaps(); initClock(); scheduleNextRefresh();
         }
 
         function playTickSound() {
-            if (!audioCtx) return;
+            if (!audioCtx || !enableSound) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'square';
@@ -288,6 +307,7 @@
         }
 
         function startMechanicalSoundLoop() {
+            if (!enableSound) return;
             soundInterval = setInterval(() => { if (flapsCurrentlyMoving > 0) playTickSound(); }, 60);
         }
 
@@ -379,29 +399,27 @@
         }
 
         document.getElementById('download-btn').addEventListener('click', () => {
-            // Format the current state nicely as JSON
+            const titleInput = document.getElementById('board-title').value.trim();
+            const boardTitle = titleInput || "RCAF BARKER COLLEGE";
+            
+            const enableSound = document.getElementById('enable-sound').checked;
+
             const jsonString = JSON.stringify(scheduleData, null, 12);
+            const finalHTML = getTemplate(boardTitle, enableSound, jsonString);
             
-            // Get the complete HTML template with the injected data
-            const finalHTML = getTemplate(jsonString);
-            
-            // Create a Blob containing the HTML data
             const blob = new Blob([finalHTML], { type: 'text/html' });
             
-            // Create a temporary link element to trigger the download
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = 'split-flap-board.html';
             
-            // Trigger download and cleanup
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         });
 
-        // Initial render
         renderRows();
     </script>
 </body>
