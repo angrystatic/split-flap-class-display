@@ -4,6 +4,8 @@ A zero-dependency, browser-based generator for creating authentic mechanical "sp
 
 With this tool, you can build a customized, animated schedule board—complete with procedural mechanical sound effects—and export it as a single, fully self-contained HTML file. Perfect for digital signage, OBS overlays, or just a cool retro dashboard.
 
+https://angrystatic.github.io/split-flap-class-display/
+
 ## ✨ Features
 
 * 🛠️ **Visual Web Editor:** A clean, Tailwind-powered UI to add, edit, and arrange rows on your board.
